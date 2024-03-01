@@ -1,0 +1,79 @@
+USE ROLE ACCOUNTADMIN;
+
+
+//creating data warehouse 
+create or replace warehouse snowflake_wh
+with
+warehouse_size = 'xsmall'
+min_cluster_count = 1
+max_cluster_count = 1
+auto_suspend = 120
+auto_resume = true
+initially_suspended = true
+warehouse_type = standard
+scaling_policy = standard;
+
+
+USE WAREHOUSE SNOWFLAKE_WH;
+
+//create database
+create or replace database airbnb_db;
+
+
+//create schema for each layer
+create or replace schema landing_zone;
+create or replace schema curated_zone;
+create or replace schema consumption_zone;
+
+
+create or replace schema file_format;
+
+//create csv file format
+create or replace file format airbnb_db.file_format.csv_format
+type = 'csv'
+field_delimiter = ';'
+null_if = ('NULL','null')
+empty_field_as_null = true
+skip_header = 1;
+
+
+//create schema for integration
+create or replace schema storage_integration;
+
+
+
+use schema storage_integration;
+
+CREATE OR REPLACE STORAGE INTEGRATION AIRBNB_INTEGRATION
+TYPE = EXTERNAL_STAGE
+STORAGE_PROVIDER = AZURE
+ENABLED = TRUE
+STORAGE_ALLOWED_LOCATIONS = ('azure://snowflakestorage254.blob.core.windows.net/airbnb-data')
+AZURE_TENANT_ID = '44ac231c-3f88-4afc-b41e-282f4247f2ed';
+
+desc storage integration AIRBNB_INTEGRATION;
+
+CREATE OR REPLACE NOTIFICATION INTEGRATION SNOWPIPE_EVENT
+ENABLED = true
+TYPE = QUEUE
+NOTIFICATION_PROVIDER = AZURE_STORAGE_QUEUE
+AZURE_STORAGE_QUEUE_PRIMARY_URI ='https://snowflakestorage254.queue.core.windows.net/snowpipe-queue'
+AZURE_TENANT_ID = '44ac231c-3f88-4afc-b41e-282f4247f2ed';
+
+
+
+//creating stage
+use database airbnb_db;
+
+create or replace stage azure_stage
+storage_integration = AIRBNB_INTEGRATION
+url = 'azure://snowflakestorage254.blob.core.windows.net/airbnb-data'
+file_format = AIRBNB_DB.FILE_FORMAT.CSV_FORMAT;
+
+
+list @azure_stage;
+
+
+
+
+
