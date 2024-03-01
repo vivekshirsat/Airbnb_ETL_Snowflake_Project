@@ -1,0 +1,136 @@
+//copy data using snowpipe
+use warehouse snowflake_wh;
+
+CREATE OR REPLACE TRANSIENT TABLE LANDING_AMENITIES(
+unified_id varchar,
+month varchar,
+hot_tub int,
+pool int
+);
+
+
+CREATE OR REPLACE PIPE AZURE_PIPE 
+AUTO_INGEST = TRUE
+INTEGRATION = SNOWPIPE_EVENT
+AS COPY INTO LANDING_AMENITIES
+FROM @AIRBNB_DB.PUBLIC.AZURE_STAGE
+FILE_FORMAT = (TYPE = 'CSV', FIELD_DELIMITER = ';',SKIP_HEADER = 1)
+PATTERN = '.*amenities.*csv';
+
+SELECT * FROM LANDING_AMENITIES;
+
+
+//creating geolocation table
+
+CREATE OR REPLACE TRANSIENT TABLE LANDING_GEOLOCATION(
+unified_id varchar,
+month varchar,
+street_name varchar,
+latitude varchar,
+longitude varchar
+);
+
+list @airbnb_db.public.azure_stage;
+
+CREATE OR REPLACE PIPE AZURE_PIPE2 
+AUTO_INGEST = TRUE
+INTEGRATION = SNOWPIPE_EVENT
+AS COPY INTO LANDING_GEOLOCATION
+FROM @AIRBNB_DB.PUBLIC.AZURE_STAGE
+PATTERN = '.*geolocation.*csv';
+
+SHOW PIPES; 
+
+SELECT SYSTEM$PIPE_STATUS('AZURE_PIPE2');
+
+SELECT * FROM LANDING_GEOLOCATION;
+
+
+// create market_analysis table
+
+CREATE OR REPLACE TRANSIENT TABLE LANDING_MARKET_ANALYSIS(
+unified_id varchar, 
+month varchar,
+zipcode number,
+city varchar,
+host_type varchar,
+bedrooms varchar,
+bathrooms varchar,
+guests varchar,
+revenue varchar,
+openness varchar,
+occupancy varchar,
+nightly_rate varchar,
+lead_time varchar null,
+length_stay varchar null
+);
+
+COPY INTO AIRBNB_DB.LANDING_ZONE.LANDING_MARKET_ANALYSIS
+FROM @AIRBNB_DB.PUBLIC.AZURE_STAGE
+PATTERN = '.*market_analysis.*csv';
+
+SELECT * FROM AIRBNB_DB.LANDING_ZONE.LANDING_MARKET_ANALYSIS;
+
+DROP TABLE AIRBNB_DB.LANDING_ZONE.LANDING_MARKET_ANALYSIS;
+
+CREATE OR REPLACE PIPE AZURE_PIPE3
+AUTO_INGEST = TRUE
+INTEGRATION = SNOWPIPE_EVENT
+AS COPY INTO AIRBNB_DB.LANDING_ZONE.LANDING_MARKET_ANALYSIS
+FROM @AIRBNB_DB.PUBLIC.AZURE_STAGE
+PATTERN = '.*market_analysis.*csv';
+
+SHOW PIPES; 
+
+SELECT SYSTEM$PIPE_STATUS('AZURE_PIPE3');
+
+SELECT * FROM LANDING_MARKET_ANALYSIS;
+
+
+//CREATE TABLE sales-property-zipcode
+
+CREATE OR REPLACE TRANSIENT TABLE LANDING_SALES_PROPERTY_ZIPCODE(
+Url varchar,
+Zestimate varchar,
+Price varchar,
+Rent_Zestimate varchar,
+Days_On_Zillow varchar,
+Bathrooms varchar,
+Bedrooms varchar,
+Living_Area varchar,
+Lot_Size varchar,
+Home_Type varchar,
+Street_Address varchar,
+City varchar,
+Zip varchar,
+State varchar,
+Country varchar,
+Broker_Name varchar,
+Has_3D_Model varchar,
+Has_Image varchar,
+Has_Video varchar,
+isZillowOwned varchar,
+sgapt varchar,
+statusText varchar,
+statusType varchar
+);
+
+CREATE OR REPLACE PIPE AZURE_PIPE4
+AUTO_INGEST = TRUE
+INTEGRATION = SNOWPIPE_EVENT
+AS COPY INTO AIRBNB_DB.LANDING_ZONE.LANDING_SALES_PROPERTY_ZIPCODE
+FROM @AIRBNB_DB.PUBLIC.AZURE_STAGE
+PATTERN = '.*zipcode_92252.*csv';
+
+SHOW PIPES; 
+
+SELECT SYSTEM$PIPE_STATUS('AZURE_PIPE3');
+
+SELECT * FROM AIRBNB_DB.LANDING_ZONE.LANDING_SALES_PROPERTY_ZIPCODE;
+
+
+
+
+
+
+
