@@ -1,0 +1,295 @@
+USE SCHEMA AIRBNB_DB.CONSUMPTION_ZONE;
+
+USE WAREHOUSE SNOWFLAKE_WH;
+
+
+CREATE OR REPLACE TABLE AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_AMENITIES(
+amenities_dim_key number autoincrement,
+unified_id varchar,
+month varchar,
+hot_tub int,
+pool int
+);
+
+
+INSERT INTO AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_AMENITIES
+(unified_id ,
+month ,
+hot_tub ,
+pool )
+SELECT 
+unified_id,
+month ,
+hot_tub ,
+pool
+FROM AIRBNB_DB.CURATED_ZONE.CURATED_AMENITIES;
+
+
+
+
+
+
+
+CREATE OR REPLACE TABLE CONSUMPTION_GEOLOCATION(
+geolocation_dim_key number autoincrement,
+unified_id varchar,
+month varchar,
+street_name varchar,
+latitude varchar,
+longitude varchar
+);
+
+
+INSERT INTO AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_GEOLOCATION(
+unified_id ,
+month ,
+street_name ,
+latitude ,
+longitude 
+)
+SELECT
+unified_id ,
+month ,
+street_name ,
+latitude ,
+longitude 
+FROM AIRBNB_DB.CURATED_ZONE.CURATED_GEOLOCATION;
+
+
+
+
+CREATE OR REPLACE TABLE CONSUMPTION_SALES_PROPERTY_ZIPCODE(
+sales_zipcode_dim_key number autoincrement,
+Url varchar,
+Zestimate varchar,
+Price varchar,
+Rent_Zestimate varchar,
+Days_On_Zillow varchar,
+Bathrooms varchar,
+Bedrooms varchar,
+Living_Area varchar,
+Lot_Size varchar,
+Home_Type varchar,
+Street_Address varchar,
+City varchar,
+Zip varchar,
+State varchar,
+Country varchar,
+Broker_Name varchar,
+Has_3D_Model varchar,
+Has_Image varchar,
+Has_Video varchar,
+isZillowOwned varchar,
+sgapt varchar,
+statusText varchar,
+statusType varchar
+);
+
+
+
+INSERT INTO AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_SALES_PROPERTY_ZIPCODE
+(Url ,
+Zestimate ,
+Price ,
+Rent_Zestimate ,
+Days_On_Zillow ,
+Bathrooms ,
+Bedrooms ,
+Living_Area ,
+Lot_Size ,
+Home_Type ,
+Street_Address ,
+City ,
+Zip ,
+State ,
+Country ,
+Broker_Name ,
+Has_3D_Model ,
+Has_Image ,
+Has_Video ,
+isZillowOwned ,
+sgapt ,
+statusText ,
+statusType )
+SELECT 
+Url ,
+Zestimate ,
+Price ,
+Rent_Zestimate ,
+Days_On_Zillow ,
+Bathrooms ,
+Bedrooms ,
+Living_Area ,
+Lot_Size ,
+Home_Type ,
+Street_Address ,
+City ,
+Zip ,
+State ,
+Country ,
+Broker_Name ,
+Has_3D_Model ,
+Has_Image ,
+Has_Video ,
+isZillowOwned ,
+sgapt ,
+statusText ,
+statusType
+FROM AIRBNB_DB.CURATED_ZONE.CURATED_SALES_PROPERTY_ZIPCODE;
+
+
+
+
+CREATE OR REPLACE TABLE CONSUMPTION_MARKET_ANALYSIS(
+market_analysis_fact_key number autoincrement,
+unified_id varchar, 
+month varchar,
+zipcode number,
+city varchar,
+host_type varchar,
+bedrooms varchar,
+bathrooms varchar,
+guests varchar,
+revenue varchar,
+openness varchar,
+occupancy varchar,
+nightly_rate varchar,
+lead_time varchar null,
+length_stay varchar null
+);
+
+
+INSERT INTO AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_MARKET_ANALYSIS(
+unified_id , 
+month ,
+zipcode ,
+city ,
+host_type ,
+bedrooms ,
+bathrooms ,
+guests ,
+revenue ,
+openness ,
+occupancy ,
+nightly_rate ,
+lead_time ,
+length_stay 
+)
+SELECT
+unified_id , 
+month ,
+zipcode ,
+city ,
+host_type ,
+bedrooms ,
+bathrooms ,
+guests ,
+revenue ,
+openness ,
+occupancy ,
+nightly_rate ,
+lead_time ,
+length_stay
+FROM AIRBNB_DB.CURATED_ZONE.CURATED_MARKET_ANALYSIS ;
+
+
+
+
+SELECT * FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_MARKET_ANALYSIS;
+SELECT * FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_AMENITIES;
+SELECT * FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_GEOLOCATION;
+SELECT * FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_SALES_PROPERTY_ZIPCODE;
+
+SHOW TABLES;
+
+
+//TABLE CLEANING 
+
+
+CREATE OR REPLACE TABLE AIRBNB_DB.CONSUMPTION_ZONE.AMENITIES_CLEANSED AS 
+SELECT 
+    unified_id,
+    split_part(month , '-',1) as year,
+    split_part(month,'-',2) as month,
+    case when hot_tub = 1 then 'yes' else 'no' end as hot_tub,
+    case when pool = 1 then 'yes' else 'no' end as pool
+FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_AMENITIES;
+
+
+
+CREATE OR REPLACE TABLE AIRBNB_DB.CONSUMPTION_ZONE.GEOLOCATION_CLEANSED AS
+SELECT
+unified_id,
+split_part(month,'-',1) as year,
+split_part(month,'-',2) as month,
+street_name,
+latitude,
+longitude
+FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_GEOLOCATION;
+
+
+SELECT * FROM CONSUMPTION_MARKET_ANALYSIS;
+
+UPDATE CONSUPTION_MARKET_ANALYSIS
+SET NIGHTLY_RATE = CAST(NIGHTLY_RATE AS NUMBER(4,0));
+
+CREATE OR REPLACE TABLE AIRBNB_DB.CONSUMPTION_ZONE.MARKET_ANALYSIS_CLEANSED AS
+SELECT 
+unified_id,
+split_part(month,'-',1) as year,
+split_part(month,'-',2) as month,
+zipcode,
+city,
+host_type,
+bedrooms, 
+bathrooms, 
+guests,
+replace(revenue,',','') as revenue,
+openness,
+occupancy,
+nightly_rate,
+lead_time,
+length_stay
+FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_MARKET_ANALYSIS;
+
+
+SELECT * FROM AIRBNB_DB.CONSUMPTION_ZONE.MARKET_ANALYSIS_CLEANSED ;
+
+
+
+
+SELECT * FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_SALES_PROPERTY_ZIPCODE ;
+
+CREATE OR REPLACE TABLE AIRBNB_DB.CONSUMPTION_ZONE.SALES_PROPERTY_ZIPCODE_CLEANSED AS
+SELECT
+    url,
+    zestimate,
+    price,
+    rent_zestimate,
+    days_on_zillow,
+    bathrooms,
+    bedrooms,
+    living_area,
+    home_type,
+    street_address,
+    city,
+    zip,
+    state,
+    country,
+    broker_name,
+    sgapt,
+    statustext,
+    statustype
+FROM AIRBNB_DB.CONSUMPTION_ZONE.CONSUMPTION_SALES_PROPERTY_ZIPCODE;
+
+
+SELECT * FROM AIRBNB_DB.CONSUMPTION_ZONE.SALES_PROPERTY_ZIPCODE_CLEANSED;
+
+
+
+
+
+
+
+
+
